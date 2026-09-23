@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+
+serviceAccountKey.json
+**/serviceAccountKey.json
+
+dist/
+build/

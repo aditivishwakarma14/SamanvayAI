@@ -1,47 +1,25 @@
-import React, { useState } from "react";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "./utils/firebase.js";
+import { useEffect } from 'react';
+import Home from './pages/Home.jsx'
+import getCurrentUser from './features/getCurrentUser.js';
+import { useDispatch } from 'react-redux';
+import { setUserdata } from './redux/userSlice.js';
 
 function App() {
+  
+  const dispath = useDispatch()
 
-  const [loading, setLoading] = useState(false);
-
-  const googleLogin = async () => {
-
-    if (loading) return;
-
-    try {
-      setLoading(true);
-
-      const result = await signInWithPopup(
-        auth,
-        googleProvider
-      );
-
-      console.log("Logged in user:", result.user);
-
-    } catch (error) {
-      console.error("Google Login Error:", error);
-    } finally {
-      setLoading(false);
+  useEffect(()=>{
+    const getUser = async ()=>{
+      const data = await getCurrentUser()
+      dispath(setUserdata(data))
     }
-  };
-
+    getUser()
+  } , [])
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
-
-      <button
-        onClick={googleLogin}
-        disabled={loading}
-        className="m-5 p-3 bg-blue-500 text-white font-semibold
-                   active:scale-95 hover:bg-blue-400
-                   rounded-xl text-2xl
-                   disabled:opacity-50"
-      >
-        {loading ? "Signing in..." : "Continue With Google"}
-      </button>
-
-    </div>
+   <>
+   <Home/>
+   </>
   );
 }
 

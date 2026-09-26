@@ -1,12 +1,12 @@
 import { StateGraph } from "@langchain/langgraph";
 import { agentState } from "./state.js";
 import { router } from "../routes/router.js";
-import { chatAgent } from "../agents/chat.agent";
-import { searchAgent } from "../agents/search.agent";
-import { codingAgent } from "../agents/coding.agent";
-import { pdfAgent } from "../agents/pdf.agent";
-import { pptAgent } from "../agents/ppt.agent";
-import { imageGenAgent } from "../agents/imageGen.agent";
+import { chatAgent } from "../agents/chat.agent.js";
+import { searchAgent } from "../agents/search.agent.js";
+import { codingAgent } from "../agents/coding.agent.js";
+import { pdfAgent } from "../agents/pdf.agent.js";
+import { pptAgent } from "../agents/ppt.agent.js";
+import { imageGenAgent } from "../agents/imageGen.agent.js";
 
 const workflow = new StateGraph(agentState)
 

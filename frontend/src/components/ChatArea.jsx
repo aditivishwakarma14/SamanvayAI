@@ -1,47 +1,46 @@
-import React, { useEffect } from 'react'
-import Nav from './Nav.jsx'
-import ChatInput from './ChatInput.jsx'
-import MessageList from './MessageList.jsx'
-import { useDispatch, useSelector } from 'react-redux'
-import getMessages from '../features/getMessages.js'
-import { setMessages } from '../state/slices/messageSlice.js'
+import React, { useEffect } from "react";
+import Nav from "./Nav.jsx";
+import ChatInput from "./ChatInput.jsx";
+import MessageList from "./MessageList.jsx";
+import { useDispatch, useSelector } from "react-redux";
+import getMessages from "../features/getMessages.js";
+import { setMessages } from "../state/slices/messageSlice.js";
 
 function ChatArea() {
-
   const { selectedConversation } = useSelector(
-    state => state.conversation
-  )
+    (state) => state.conversation
+  );
 
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   useEffect(() => {
-
     const getMsg = async () => {
+      if (selectedConversation) {
+        if (selectedConversation.title === "New Chat") {
+          dispatch(setMessages([]));
+          return;
+        }
 
-      if (!selectedConversation?._id) return
+        const data = await getMessages(selectedConversation._id);
 
-      const data = await getMessages(
-        selectedConversation._id
-      )
+        dispatch(setMessages(data || []));
+      } else {
+        dispatch(setMessages([]));
+      }
+    };
 
-      dispatch(setMessages(data || []))
-    }
-
-    getMsg()
-
-  }, [selectedConversation, dispatch])
+    getMsg();
+  }, [selectedConversation?._id, dispatch]);
 
   return (
-    <div className="flex-1 flex flex-col">
-
+    <div className="flex-1 flex flex-col min-w-0">
       <Nav />
 
       <MessageList />
 
       <ChatInput />
-
     </div>
-  )
+  );
 }
 
-export default ChatArea
+export default ChatArea;

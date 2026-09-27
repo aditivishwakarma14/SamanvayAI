@@ -1,18 +1,17 @@
-import React from 'react'
-import { useSelector } from 'react-redux'
-import MessageBubble from './MessageBubble'
+import React from "react";
+import { useSelector } from "react-redux";
+import MessageBubble from "./MessageBubble";
 
 function MessageList() {
-
   const { messages } = useSelector(
-    state => state.message
-  )
+    (state) => state.message
+  );
 
   const { selectedConversation } = useSelector(
-    state => state.conversation
-  )
+    (state) => state.conversation
+  );
 
-  const isEmpty = !selectedConversation || !messages?.length
+  const isEmpty = !selectedConversation || !messages?.length;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -42,7 +41,7 @@ function MessageList() {
             {[
               "Write a Netflix clone",
               "Explain Redis",
-              "Build a dashboard"
+              "Build a dashboard",
             ].map((s) => (
 
               <button
@@ -61,20 +60,23 @@ function MessageList() {
       ) : (
 
         <div>
-         {messages.map((msg) => (
-  <div key={msg._id}>
-    <MessageBubble
-      role={msg?.role}
-      content={msg?.content}
-    />
-  </div>
-))}
+          {messages.map((msg, index) => (
+            <div
+              key={msg?._id || `${msg?.role}-${index}`}
+            >
+              <MessageBubble
+                role={msg?.role}
+                content={msg?.content}
+                images = {msg?.images || []}
+              />
+            </div>
+          ))}
         </div>
 
       )}
 
     </div>
-  )
+  );
 }
 
-export default MessageList
+export default MessageList;

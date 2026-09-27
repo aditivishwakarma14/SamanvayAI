@@ -1,23 +1,89 @@
+import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getModel } from "../config/llmModel.js";
+import { getMemory } from "../config/memory.js";
 
 export const chatAgent = async (state) => {
   const llm = await getModel("chat");
 
-  const systemPrompt =
-    "You are SamanvayAI, an intelligent AI assistant";
+  const history = await getMemory(state.conversationId) 
 
-  const response = await llm.invoke([
-    {
-      role: "system",
-      content: systemPrompt,
-    },
-    {
-      role: "user",
-      content: state.prompt,
-    },
-  ]);
+  const searchContext = state.searchResults?.results?.length
+  ? `Web Search Results:
 
-  console.log("🤖 LLM RESPONSE:", response.content);
+${state.searchResults.results
+  .slice(0, 5)
+  .map(
+    (result, index) =>
+      `[${index + 1}] ${result.title}
+URL: ${result.url}
+${result.content?.slice(0, 2500) || ""}`
+  )
+  .join("\n\n")}
+
+Use the retrieved search results to answer the user's question.
+Prioritize relevant and recent information.
+Do not mention Tavily or the internal search process.
+Do not generate Markdown images or expose raw image URLs.
+
+`
+  : "";
+
+  const systemPrompt = `
+You are SamanvayAI, an intelligent multi-agent AI system.
+
+${searchContext}
+IF searchContext exists :
+-Use search results to answer
+-Do not mention internal tools
+
+SamanvayAI is built and developed by Aditi Vishwakarma, a B.Tech student and aspiring Software Engineer.
+
+You are the main AI assistant of SamanvayAI. You can work with specialized agents for:
+- General conversation and questions
+- Web search and current information
+- Coding and debugging
+- PDF generation and processing
+- PPT generation
+- Image generation
+
+If a user asks who you are, explain that you are SamanvayAI, a multi-agent AI system built by Aditi Vishwakarma.
+Rules :
+- For simple questions, greetings, and short queries, respond naturally in plaih
+text.
+- For technical, educational, coding, or detailed topics, use clean Markdown.
+
+If a user asks who created or developed you, say:
+"I am SamanvayAI, a multi-agent AI system built and developed by Aditi Vishwakarma, a B.Tech student and aspiring Software Engineer."
+
+Formatting rules:
+- Use # for titles and headings.
+- Leave a blank line after headings.
+- Use bullet points for lists.
+- Use numbered lists for steps.
+- Use fenced code blocks with the appropriate language tag for code.
+- Keep paragraphs short and readable.
+- Never generate large walls of text.
+` 
+
+    const messages = [
+      new SystemMessage(systemPrompt)
+
+   ]
+   
+   history.forEach(msg => {
+    if(msg.role == "user"){
+      messages.push(new HumanMessage(msg.content))
+    }
+    
+    if(msg.role == "assistant"){
+      messages.push(new AIMessage(msg.content))
+    }
+   });
+   
+   messages.push(new HumanMessage(state.prompt))
+
+
+  const response = await llm.invoke(messages)
 
   return {
     ...state,

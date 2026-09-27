@@ -20,7 +20,7 @@ import logOut from "../features/logOut.js";
 import {
   addConversation,
   setConversations,
-  setSelectConversation,
+  setSelectedConversation,
 } from "../state/slices/conversation.slice.js";
 
 import { setUserdata } from "../state/slices/userSlice.js";
@@ -41,7 +41,7 @@ function SideBar() {
   useEffect(() => {
     if (!userData?.userId) {
       dispatch(setConversations([]));
-      dispatch(setSelectConversation(null));
+      dispatch(setSelectedConversation(null));
       return;
     }
 
@@ -86,7 +86,7 @@ function SideBar() {
       }
 
       dispatch(addConversation(data));
-      dispatch(setSelectConversation(data));
+      dispatch(setSelectedConversation(data));
 
       console.log("SELECTED CONVERSATION:", data);
     } catch (error) {
@@ -109,7 +109,7 @@ function SideBar() {
 
       dispatch(setUserdata(null));
       dispatch(setConversations([]));
-      dispatch(setSelectConversation(null));
+      dispatch(setSelectedConversation(null));
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -141,7 +141,7 @@ function SideBar() {
           hover:text-slate-200 hover:bg-white/[0.05]
           transition-colors duration-150
           bg-transparent border-none cursor-pointer"
-          onClick={handleCreateConversation}
+          onClick={()=>{dispatch(setSelectedConversation(null))}}
         >
           <Plus size={17} />
         </button>
@@ -161,7 +161,7 @@ function SideBar() {
                 key={conv._id}
                 title={conv.title || "New Chat"}
                 onClick={() =>
-                  dispatch(setSelectConversation(conv))
+                  dispatch(setSelectedConversation(conv))
                 }
                 className={`flex items-center
                 justify-center w-full h-9
@@ -259,7 +259,8 @@ function SideBar() {
             w-7 h-7 rounded-lg text-slate-500
             hover:text-slate-200 hover:bg-white/[0.05]
             bg-transparent border-none cursor-pointer"
-            onClick={handleCreateConversation}
+            onClick={()=>{dispatch(setSelectedConversation(null))}}
+
           >
             <PenSquare size={16} />
           </button>
@@ -276,7 +277,8 @@ function SideBar() {
             hover:bg-[#161D38]
             hover:text-[#A8B6FF]
             hover:border-[#4B5FC4]"
-            onClick={handleCreateConversation}
+            onClick={()=>{dispatch(setSelectedConversation(null))}}
+
           >
             <Plus size={15} />
             New Chat
@@ -309,7 +311,7 @@ function SideBar() {
               <button
                 key={conv._id}
                 onClick={() =>
-                  dispatch(setSelectConversation(conv))
+                  dispatch(setSelectedConversation(conv))
                 }
                 className={`w-full flex items-center
                 gap-2.5 text-left cursor-pointer

@@ -12,11 +12,12 @@ const sendMessage = async (payload) => {
     return data;
   } catch (error) {
     console.error(
-      "sendMessage error:",
+      "SEND MESSAGE ERROR:",
       error.response?.data || error.message
     );
 
-    return null;
+    // IMPORTANT: error ko ChatInput tak bhejo
+    throw error;
   }
 };
 

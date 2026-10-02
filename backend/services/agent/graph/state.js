@@ -7,6 +7,7 @@ export const agentState = Annotation.Root({
   agent : Annotation() , // isme hum yeh check karnege ki kon sa agent use karna hai 
   conversationId : Annotation() ,
   searchResults : Annotation() ,
-  images : Annotation()
+  images : Annotation() ,
+  artifacts : Annotation()
 });
 

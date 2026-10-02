@@ -1,24 +1,14 @@
-import api from "../utils/axios.js";
 
-const sendMessage = async (payload) => {
-  try {
-    const { data } = await api.post(
-      "/api/agent/chat",
-      payload
-    );
+import api from '../utils/axios.js'
 
-    console.log("🤖 AI RESPONSE:", data);
+async function sendMessage(payload) {
+ try {
+    const {data}=await api.post("/api/agent/chat",payload)
+    return data
+ } catch (error) {
+    console.log(error)
+    return null
+ }
+}
 
-    return data;
-  } catch (error) {
-    console.error(
-      "SEND MESSAGE ERROR:",
-      error.response?.data || error.message
-    );
-
-    // IMPORTANT: error ko ChatInput tak bhejo
-    throw error;
-  }
-};
-
-export default sendMessage;
+export default sendMessage

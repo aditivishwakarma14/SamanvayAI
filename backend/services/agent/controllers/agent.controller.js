@@ -6,21 +6,21 @@ export const agent = async (req, res) => {
   try {
     const { prompt, conversationId, agent } = req.body;
 
+    // Save user message
     await axios.post(`${process.env.CHAT_SERVICE}/save-message`, {
       conversationId,
       role: "user",
       content: prompt,
     });
 
+    // Run LangGraph
     const result = await graph.invoke({
       prompt,
       conversationId,
-      agent
+      agent,
     });
 
-    console.log("GRAPH RESULT:", result);
-
-    const response = result?.aiResponse;
+    console.log("result", result);
 
     await addMessage(
       conversationId,
@@ -28,29 +28,35 @@ export const agent = async (req, res) => {
       prompt
     );
 
+    // Save assistant message to memory
     await addMessage(
       conversationId,
       "assistant",
-      response
+      result.aiResponse
     );
 
+    // Save assistant message to chat service
     await axios.post(`${process.env.CHAT_SERVICE}/save-message`, {
       conversationId,
       role: "assistant",
-      content: response,
-      images: result?.images
+      content: result?.aiResponse,
+      images: result?.images || [],
+      artifacts: result?.artifacts
     });
 
     return res.status(200).json({
-      response,
-      images: result?.images
+      answer: result?.aiResponse,
+      images: result?.images,
+      artifacts: result?.artifacts
     });
 
   } catch (error) {
-    console.error("AGENT ERROR:", error);
+
+    console.error(error);
 
     return res.status(500).json({
-      message: `agent error ${error.message}`,
+      success: false,
+      message: `Agent error: ${error}`,
     });
   }
 };

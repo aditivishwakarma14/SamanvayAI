@@ -1,4 +1,22 @@
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
+
+
+const fileSchmea = new mongoose.Schema({
+    name : String ,
+    content : String
+}, {
+    _id : false
+})
+
+const artifactSchema = new mongoose.Schema({
+    id:Number ,
+    type :String ,
+    title : String ,
+    files : [fileSchmea],
+
+} , {
+    _id : false
+})
 
 const messageSchema = new mongoose.Schema({
 
@@ -11,7 +29,9 @@ const messageSchema = new mongoose.Schema({
         enum : ["user" , "assistant"]
     },
     content : String ,
-    images : [String]
+    images : [String],
+    artifacts : [artifactSchema]
+
 
 } , {timestamps : true})
 

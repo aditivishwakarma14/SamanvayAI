@@ -1,17 +1,29 @@
 import mongoose from "mongoose";
 
-const connectToDB = async ()=> {
+const connectToDB = async () => {
+  try {
+    const uri = process.env.MONGO_URI;
 
-    try{
-
-    await mongoose.connect(process.env.MONGO_URI)
-    console.log("Database connected in agent")
-
-    }catch(error){
-
-    console.error("error on connection of database in agent" , error.message)
+    if (!uri) {
+      throw new Error("MONGO_URI is missing");
     }
 
-}
+    console.log(
+      "MongoDB target:",
+      uri.replace(/\/\/.*@/, "//***@")
+    );
 
-export default connectToDB ;  
+    await mongoose.connect(uri);
+
+    console.log("Database connected in agent");
+  } catch (error) {
+    console.error(
+      "error on connection of database in agent:",
+      error.message
+    );
+
+    throw error;
+  }
+};
+
+export default connectToDB;

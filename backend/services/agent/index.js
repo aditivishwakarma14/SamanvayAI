@@ -1,11 +1,10 @@
+import "dotenv/config";
+
 import express from "express";
-import dotenv from "dotenv";
 import connectToDB from "./config/db.js";
 import router from "./routes/agent.route.js";
 
-dotenv.config();
-
-const port = process.env.PORT;
+const port = process.env.PORT || 8003;
 
 const app = express();
 
@@ -19,7 +18,17 @@ app.get("/", (req, res) => {
   });
 });
 
-app.listen(port, () => {
-  connectToDB();
-  console.log(`agent started ${port}`);
-});
+const startServer = async () => {
+  try {
+    await connectToDB();
+
+    app.listen(port, () => {
+      console.log(`agent started ${port}`);
+    });
+  } catch (error) {
+    console.error("Agent startup failed:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();

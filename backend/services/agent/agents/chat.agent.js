@@ -1,14 +1,21 @@
-import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
+
 import { getModel } from "../config/llmModel.js";
 import { getMemory } from "../config/memory.js";
 
 export const chatAgent = async (state) => {
-  const llm = await getModel("chat");
+  try {
+    const llm = await getModel("chat");
 
-  const history = await getMemory(state.conversationId) 
+    const history = await getMemory(state.conversationId);
 
-  const searchContext = state.searchResults?.results?.length
-  ? `Web Search Results:
+    const searchContext =
+      state.searchResults?.results?.length
+        ? `Web Search Results:
 
 ${state.searchResults.results
   .slice(0, 5)
@@ -26,19 +33,21 @@ Do not mention Tavily or the internal search process.
 Do not generate Markdown images or expose raw image URLs.
 
 `
-  : "";
+        : "";
 
-  const systemPrompt = `
+    const systemPrompt = `
 You are SamanvayAI, an intelligent multi-agent AI system.
 
 ${searchContext}
-IF searchContext exists :
--Use search results to answer
--Do not mention internal tools
+
+If searchContext exists:
+- Use the search results to answer.
+- Do not mention internal tools.
 
 SamanvayAI is built and developed by Aditi Vishwakarma, a B.Tech student and aspiring Software Engineer.
 
 You are the main AI assistant of SamanvayAI. You can work with specialized agents for:
+
 - General conversation and questions
 - Web search and current information
 - Coding and debugging
@@ -47,10 +56,12 @@ You are the main AI assistant of SamanvayAI. You can work with specialized agent
 - Image generation
 
 If a user asks who you are, explain that you are SamanvayAI, a multi-agent AI system built by Aditi Vishwakarma.
-Rules :
-- For simple questions, greetings, and short queries, respond naturally in plaih
-text.
+
+Rules:
+- For simple questions, greetings, and short queries, respond naturally in plain text.
 - For technical, educational, coding, or detailed topics, use clean Markdown.
+- Keep responses clear and concise.
+- Do not generate large walls of text.
 
 If a user asks who created or developed you, say:
 "I am SamanvayAI, a multi-agent AI system built and developed by Aditi Vishwakarma, a B.Tech student and aspiring Software Engineer."
@@ -62,31 +73,68 @@ Formatting rules:
 - Use numbered lists for steps.
 - Use fenced code blocks with the appropriate language tag for code.
 - Keep paragraphs short and readable.
-- Never generate large walls of text.
-` 
+`;
 
     const messages = [
-      new SystemMessage(systemPrompt)
+      new SystemMessage({
+        content: systemPrompt,
+      }),
+    ];
 
-   ]
-   
-   history.forEach(msg => {
-    if(msg.role == "user"){
-      messages.push(new HumanMessage(msg.content))
+    // Add previous conversation history
+    if (Array.isArray(history)) {
+      history.forEach((msg) => {
+        // Ignore invalid memory entries
+        if (!msg || typeof msg.content !== "string" || !msg.content.trim()) {
+          return;
+        }
+
+        if (msg.role === "user") {
+          messages.push(
+            new HumanMessage({
+              content: msg.content,
+            })
+          );
+        }
+
+        if (msg.role === "assistant") {
+          messages.push(
+            new AIMessage({
+              content: msg.content,
+            })
+          );
+        }
+      });
     }
-    
-    if(msg.role == "assistant"){
-      messages.push(new AIMessage(msg.content))
+
+    // Add current user message
+    if (state.prompt?.trim()) {
+      messages.push(
+        new HumanMessage({
+          content: state.prompt,
+        })
+      );
     }
-   });
-   
-   messages.push(new HumanMessage(state.prompt))
 
+    console.log("========== CHAT MESSAGES ==========");
+    console.log(messages);
+    console.log("===================================");
 
-  const response = await llm.invoke(messages)
+    const response = await llm.invoke(messages);
 
-  return {
-    ...state,
-    aiResponse: response.content,
-  };
+    console.log("========== CHAT RESPONSE ==========");
+    console.log(response.content);
+    console.log("===================================");
+
+    return {
+      ...state,
+      aiResponse: response.content,
+    };
+  } catch (error) {
+    console.error("========== CHAT AGENT ERROR ==========");
+    console.error(error);
+    console.error("======================================");
+
+    throw error;
+  }
 };

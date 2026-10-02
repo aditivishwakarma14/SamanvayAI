@@ -57,7 +57,7 @@ ${state.prompt}
 
     const downloadUrl = await getFromS3(
       filename,
-      24 * 60 * 60
+      60*10
     );
 
     // await deductCredits(state.userId, "imageGen");

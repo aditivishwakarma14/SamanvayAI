@@ -2,11 +2,11 @@ import { getModel } from "../config/llmModel.js"
 import { generatePdf } from "../utils/generatePdf.js"
 import { getFromS3 } from "../utils/getFromS3.js"
 import { uploadToS3 } from "../utils/uploadToS3.js"
-// import { deductCredits } from "../utils/deductCredits.js"
-// import { checkAgentLimit } from "../config/agentLimit.js"
+import { deductCredits } from "../utils/deductCredits.js"
+import { checkAgentLimit } from "../config/agentLimit.js"
 export const pdfAgent=async (state) => {
     try {
-        // const rate=await checkAgentLimit(state.userId,"pdf")
+        const rate=await checkAgentLimit(state.userId,"pdf")
         
         
         const llm=await getModel("pdf")
@@ -43,7 +43,7 @@ ${state.prompt}
 
         const res=await llm.invoke(prompt)
         const data=JSON.parse(res.content)
-    //    await deductCredits(state.userId,"pdf")
+       await deductCredits(state.userId,"pdf")
         
         const pdfBuffer=await generatePdf(data)
 

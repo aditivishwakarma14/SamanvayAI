@@ -6,6 +6,7 @@ import {
 
 import { getModel } from "../config/llmModel.js";
 import { getMemory } from "../config/memory.js";
+import {deductCredits} from "../utils/deductCredits.js"
 
 export const chatAgent = async (state) => {
   try {
@@ -116,24 +117,21 @@ Formatting rules:
       );
     }
 
-    console.log("========== CHAT MESSAGES ==========");
     console.log(messages);
-    console.log("===================================");
+    
 
     const response = await llm.invoke(messages);
+    await deductCredits(state.userId , "chat")
 
-    console.log("========== CHAT RESPONSE ==========");
+
     console.log(response.content);
-    console.log("===================================");
 
     return {
       ...state,
       aiResponse: response.content,
     };
   } catch (error) {
-    console.error("========== CHAT AGENT ERROR ==========");
     console.error(error);
-    console.error("======================================");
 
     throw error;
   }

@@ -1,27 +1,38 @@
 import { getModel } from "../config/llmModel.js";
 
 export const router = async (state) => {
+
+  // Check uploaded file first
+  // multer uses "mimetype"
+  const mimeType =
+    state.file?.mimetype ||
+    state.file?.mimeType ||
+    state.file?.type ||
+    "";
+
+  // Uploaded PDF -> PDF RAG
+  if (mimeType === "application/pdf") {
+    return {
+      ...state,
+      agent: "pdfRag",
+    };
+  }
+
+  // Uploaded image -> Image Analyzer
+  if (mimeType.startsWith("image/")) {
+    return {
+      ...state,
+      agent: "imageAnalyzer",
+    };
+  }
+
+  // Existing manual agent selection logic
   if (state.agent && state.agent !== "auto") {
     return {
       ...state,
       agent: state.agent,
     };
   }
-
-   if(state.file.mimeType === "application/pdf"){
-    return {
-      ...state ,
-      agent :  "pdfRag"
-    }
-   }
-
-    if(state.file.mimeType.startsWith === "image/"){
-    return {
-      ...state ,
-      agent :  "imageAnalyzer"
-    }
-   }
-
 
   const llm = await getModel("router");
 

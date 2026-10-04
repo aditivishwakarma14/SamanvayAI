@@ -1,17 +1,26 @@
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
+
 import mongoose from "mongoose";
 
-const connectToDB = async ()=> {
+const connectToDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI, {
+            serverSelectionTimeoutMS: 5000,
+        });
 
-    try{
+        console.log("Database connected in chat");
+        return true;
 
-    await mongoose.connect(process.env.MONGO_URI)
-    console.log("Database connected in chat")
+    } catch (error) {
+        console.error(
+            "error on connection of database in chat:",
+            error.message
+        );
 
-    }catch(error){
-
-    console.error("error on connection of database in chat" , error.message)
+        return false;
     }
+};
 
-}
-
-export default connectToDB ;  
+export default connectToDB;

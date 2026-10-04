@@ -9,11 +9,18 @@ import {
   Presentation,
   ImageIcon,
   Globe,
+  X,
 } from "lucide-react";
+
 import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addMessage, setArtifacts } from "../state/slices/messageSlice.js";
-import { X } from "lucide-react";
+
+import {
+  addMessage,
+  setArtifacts,
+  setLoading,
+} from "../state/slices/messageSlice.js";
+
 import sendMessage from "../features/sendMessage";
 import { createConversation } from "../features/createConversation.js";
 
@@ -72,18 +79,15 @@ function ChatInput() {
       );
     }
 
-    const payload = {
-      prompt,
-      conversationId: conversation?._id,
-      agent: selectedAgent.toLowerCase(),
-    };
-    
-    const formData = new FormData()
-    formData.append("prompt" , value.trim())
-    formData.append("conversationId" ,conversation?._id )
-    formData.append("agent" , selectedAgent.toLowerCase())
-    formData.append("file" , selectedFile)
+    const formData = new FormData();
 
+    formData.append("prompt", prompt);
+    formData.append("conversationId", conversation?._id);
+    formData.append("agent", selectedAgent.toLowerCase());
+
+    if (selectedFile) {
+      formData.append("file", selectedFile);
+    }
 
     // Show user message immediately
     dispatch(
@@ -96,9 +100,17 @@ function ChatInput() {
     // Clear input
     setValue("");
 
+    // Start loading
+    dispatch(setLoading(true));
+
     try {
       const data = await sendMessage(formData);
-      setSelectedFile(null)
+
+      setSelectedFile(null);
+
+      if (fileRef.current) {
+        fileRef.current.value = "";
+      }
 
       console.log("🤖 AI RESPONSE FROM API:", data);
 
@@ -120,6 +132,9 @@ function ChatInput() {
           content: "Sorry, something went wrong. Please try again.",
         })
       );
+    } finally {
+      // Stop loading
+      dispatch(setLoading(false));
     }
   };
 
@@ -185,7 +200,6 @@ function ChatInput() {
                   font-medium
                   border
                   transition-all
-
                   ${
                     isActive
                       ? "bg-[#11162A] text-[#A8B6FF] border-[#35458A]"
@@ -206,34 +220,51 @@ function ChatInput() {
           })}
         </div>
 
-        
-         {
-                  selectedFile && <div className='my-3'>
-        
-                    <div className='inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2'>
-                      {
-                        selectedFile?.type === "application/pdf" ? <FileText size={16}
-        
-                          className="text-red-400"
-                        /> : selectedFile.type.startsWith("image/") && <img src={URL.createObjectURL(selectedFile)} className="h-10 w-10 rounded-xl object-cover mt-3"
-                        />
-                      }
-        
-                      <div>
-                        <p className='text-xs text-white'>
-                          {selectedFile?.name}
-                        </p>
-                        <p className='text-[10px] text-slate-500'>
-                          {Math.ceil(selectedFile.size)}KB
-                        </p>
-        
-                      </div>
-                      <button className='ml-2' onClick={() => { setSelectedFile(null); fileRef.current.value = "" }}><X size={14} className='text-slate-500 hover:text-white' /></button>
-                    </div>
-        
-        
-                  </div>
-                }
+        {/* Selected File */}
+        {selectedFile && (
+          <div className="my-3">
+            <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
+              {selectedFile?.type === "application/pdf" ? (
+                <FileText size={16} className="text-red-400" />
+              ) : (
+                selectedFile.type.startsWith("image/") && (
+                  <img
+                    src={URL.createObjectURL(selectedFile)}
+                    className="h-10 w-10 rounded-xl object-cover"
+                    alt=""
+                  />
+                )
+              )}
+
+              <div>
+                <p className="text-xs text-white">
+                  {selectedFile?.name}
+                </p>
+
+                <p className="text-[10px] text-slate-500">
+                  {Math.ceil(selectedFile.size / 1024)} KB
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="ml-2"
+                onClick={() => {
+                  setSelectedFile(null);
+
+                  if (fileRef.current) {
+                    fileRef.current.value = "";
+                  }
+                }}
+              >
+                <X
+                  size={14}
+                  className="text-slate-500 hover:text-white"
+                />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Textarea */}
         <textarea
@@ -249,10 +280,9 @@ function ChatInput() {
 
           {/* Left Buttons */}
           <div className="flex items-center gap-1">
-
             <input
               type="file"
-              accept=".pdf , image/*"
+              accept=".pdf,image/*"
               hidden
               ref={fileRef}
               onChange={(e) => {
@@ -265,7 +295,7 @@ function ChatInput() {
             />
 
             <button
-              onClick={() => fileRef.current.click()}
+              onClick={() => fileRef.current?.click()}
               type="button"
               className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 border border-transparent transition-all duration-150 bg-transparent cursor-pointer"
             >
@@ -278,7 +308,6 @@ function ChatInput() {
             >
               <Mic size={16} />
             </button>
-
           </div>
 
           {/* Send Button */}
@@ -291,7 +320,6 @@ function ChatInput() {
               w-8 h-8
               rounded-lg
               transition-all duration-150
-
               ${
                 value.trim()
                   ? "text-[#8ea2ff] bg-indigo-500/10 border border-[#35458A] cursor-pointer hover:bg-[#161D38] hover:text-[#A8B6FF] hover:border-[#4B5FC4]"
@@ -301,7 +329,6 @@ function ChatInput() {
           >
             <Send size={15} />
           </button>
-
         </div>
       </div>
     </div>

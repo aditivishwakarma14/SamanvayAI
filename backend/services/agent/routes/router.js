@@ -2,15 +2,22 @@ import { getModel } from "../config/llmModel.js";
 
 export const router = async (state) => {
 
-  // Check uploaded file first
-  // multer uses "mimetype"
+  // Manual agent selection
+  if (state.agent && state.agent !== "auto") {
+    return {
+      ...state,
+      agent: state.agent,
+    };
+  }
+
+  // Detect uploaded file
   const mimeType =
     state.file?.mimetype ||
     state.file?.mimeType ||
     state.file?.type ||
     "";
 
-  // Uploaded PDF -> PDF RAG
+  // PDF -> PDF RAG
   if (mimeType === "application/pdf") {
     return {
       ...state,
@@ -18,19 +25,11 @@ export const router = async (state) => {
     };
   }
 
-  // Uploaded image -> Image Analyzer
+  // Image -> Image Analyzer
   if (mimeType.startsWith("image/")) {
     return {
       ...state,
       agent: "imageAnalyzer",
-    };
-  }
-
-  // Existing manual agent selection logic
-  if (state.agent && state.agent !== "auto") {
-    return {
-      ...state,
-      agent: state.agent,
     };
   }
 
@@ -39,6 +38,7 @@ export const router = async (state) => {
   const prompt = `You are an intelligent agent router.
 
 Available agents:
+
 - chat
 - search
 - coding
@@ -48,25 +48,39 @@ Available agents:
 
 Rules:
 
-- chat: General conversation, explanations, learning, casual questions, and questions that can be answered from general knowledge without needing external information.
+chat:
+General conversation, explanations, learning, casual questions,
+and questions that can be answered without external information.
 
-- search: Any query that requires information from the internet, including current, latest, recent, real-time, live, time-sensitive, factual, or externally verifiable information. Use search whenever external information is needed.
+search:
+Questions requiring internet or external information,
+including current, latest, recent, real-time, live,
+time-sensitive, or externally verifiable information.
 
-- coding: Programming, debugging, code generation, algorithms, errors, and software development.
+coding:
+Programming, debugging, code generation, algorithms,
+software development, APIs, architecture, and technical implementation.
 
-- pdf: Questions about generating or working with PDFs or PDF documents.
+pdf:
+Generating, creating, modifying, or working with PDF documents.
 
-- ppt: Questions about generating or working with PowerPoint/PPT presentations.
+ppt:
+Generating, creating, modifying, or working with PowerPoint presentations.
 
-- imageGen: Requests to generate, create, edit, modify, or visualize images.
+imageGen:
+Requests to generate, create, edit, modify, design,
+or visualize images.
 
 Important:
-- Do not hardcode specific keywords or queries.
-- Decide based on the meaning and information requirements of the user's request.
-- If the answer requires up-to-date or externally retrieved information, choose search.
-- If the answer can be answered naturally without external information, choose chat.
+- Do not hardcode specific keywords.
+- Understand the meaning and intent of the user's query.
+- Choose search when external or up-to-date information is required.
+- Choose coding for programming and software development tasks.
+- Choose imageGen for image generation or image editing requests.
+- Return ONLY ONE agent name.
 
-Return ONLY ONE word:
+Valid outputs:
+
 chat
 search
 coding
@@ -79,8 +93,12 @@ ${state.prompt}`;
 
   const response = await llm.invoke(prompt);
 
+  const selectedAgent = response.content
+    .trim()
+    .toLowerCase();
+
   return {
     ...state,
-    agent: response.content.trim().toLowerCase(),
+    agent: selectedAgent,
   };
 };

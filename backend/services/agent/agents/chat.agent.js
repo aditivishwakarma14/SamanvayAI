@@ -6,10 +6,13 @@ import {
 
 import { getModel } from "../config/llmModel.js";
 import { getMemory } from "../config/memory.js";
-import {deductCredits} from "../utils/deductCredits.js"
+import { deductCredits } from "../utils/deductCredits.js";
+import { checkAgentLimit } from "../config/agentLimit.js";
 
 export const chatAgent = async (state) => {
   try {
+    await checkAgentLimit(state.userId, "chat");
+
     const llm = await getModel("chat");
 
     const history = await getMemory(state.conversationId);
@@ -82,11 +85,13 @@ Formatting rules:
       }),
     ];
 
-    // Add previous conversation history
     if (Array.isArray(history)) {
       history.forEach((msg) => {
-        // Ignore invalid memory entries
-        if (!msg || typeof msg.content !== "string" || !msg.content.trim()) {
+        if (
+          !msg ||
+          typeof msg.content !== "string" ||
+          !msg.content.trim()
+        ) {
           return;
         }
 
@@ -108,7 +113,6 @@ Formatting rules:
       });
     }
 
-    // Add current user message
     if (state.prompt?.trim()) {
       messages.push(
         new HumanMessage({
@@ -117,22 +121,27 @@ Formatting rules:
       );
     }
 
-    console.log(messages);
-    
+    console.log("CHAT MESSAGES:", messages);
 
     const response = await llm.invoke(messages);
-    await deductCredits(state.userId , "chat")
 
+    await deductCredits(state.userId, "chat");
 
-    console.log(response.content);
+    console.log("CHAT RESPONSE:", response.content);
 
     return {
       ...state,
       aiResponse: response.content,
     };
   } catch (error) {
-    console.error(error);
+    console.error("CHAT AGENT ERROR:", error);
 
-    throw error;
+    return {
+      ...state,
+      aiResponse:
+        error?.data?.message ||
+        error?.message ||
+        "Failed to generate chat response",
+    };
   }
 };

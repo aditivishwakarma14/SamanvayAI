@@ -1,6 +1,7 @@
 import {
   Paperclip,
   Mic,
+  MicOff,
   Send,
   Zap,
   MessageSquare,
@@ -12,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -36,7 +37,9 @@ function ChatInput() {
   const [value, setValue] = useState("");
   const [selectedAgent, setSelectedAgent] = useState("Auto");
   const [selectedFile, setSelectedFile] = useState(null);
+  const [listening, setListening] = useState(false);
 
+  const recognitionRef = useRef(null);
   const fileRef = useRef(null);
 
   const { selectedConversation } = useSelector(
@@ -44,6 +47,60 @@ function ChatInput() {
   );
 
   const dispatch = useDispatch();
+
+  // Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+
+      for (
+        let index = event.resultIndex;
+        index < event.results.length;
+        index++
+      ) {
+        transcript += event.results[index][0].transcript;
+      }
+
+      setValue(transcript);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
+    recognitionRef.current = recognition;
+  }, []);
+
+  // Mic toggle
+  const toggleMic = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    if (listening) {
+      recognitionRef.current.stop();
+      setListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setListening(true);
+      } catch (error) {
+        console.error("Speech recognition error:", error);
+      }
+    }
+  };
 
   const handleSendMessage = async () => {
     const prompt = value.trim();
@@ -111,8 +168,6 @@ function ChatInput() {
       if (fileRef.current) {
         fileRef.current.value = "";
       }
-
-      console.log("🤖 AI RESPONSE FROM API:", data);
 
       dispatch(setArtifacts(data?.artifacts || []));
 
@@ -224,6 +279,7 @@ function ChatInput() {
         {selectedFile && (
           <div className="my-3">
             <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
+
               {selectedFile?.type === "application/pdf" ? (
                 <FileText size={16} className="text-red-400" />
               ) : (
@@ -280,6 +336,7 @@ function ChatInput() {
 
           {/* Left Buttons */}
           <div className="flex items-center gap-1">
+
             <input
               type="file"
               accept=".pdf,image/*"
@@ -294,6 +351,7 @@ function ChatInput() {
               }}
             />
 
+            {/* File Upload */}
             <button
               onClick={() => fileRef.current?.click()}
               type="button"
@@ -302,12 +360,23 @@ function ChatInput() {
               <Paperclip size={16} />
             </button>
 
+            {/* Microphone */}
             <button
               type="button"
-              className="flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 border border-transparent transition-all duration-150 bg-transparent cursor-pointer"
+              onClick={toggleMic}
+              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150 cursor-pointer ${
+                listening
+                  ? "bg-red-500 text-white"
+                  : "text-slate-600 hover:text-slate-400 hover:bg-white/[0.05]"
+              }`}
             >
-              <Mic size={16} />
+              {listening ? (
+                <Mic size={16} />
+              ) : (
+                <MicOff size={16} />
+              )}
             </button>
+
           </div>
 
           {/* Send Button */}
@@ -329,6 +398,7 @@ function ChatInput() {
           >
             <Send size={15} />
           </button>
+
         </div>
       </div>
     </div>

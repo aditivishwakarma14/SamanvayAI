@@ -73,30 +73,24 @@ function SideBar() {
     };
   }, [dispatch, userData?.userId]);
 
-  // Reset image error
+  // Reset image error when avatar changes
   useEffect(() => {
     setImageError(false);
   }, [userData?.avatar]);
 
-  // Create + select conversation
+  // Create and select conversation
   const handleCreateConversation = async () => {
     try {
       const data = await createConversation();
 
-      console.log("CREATED CONVERSATION:", data);
-
       if (!data?._id) {
-        console.log("Conversation was not created");
         return;
       }
 
       dispatch(addConversation(data));
       dispatch(setSelectedConversation(data));
 
-      // Close sidebar on mobile after creating chat
       setMobileOpen(false);
-
-      console.log("SELECTED CONVERSATION:", data);
     } catch (error) {
       console.error("Create conversation error:", error);
     }
@@ -105,24 +99,14 @@ function SideBar() {
   // Select conversation
   const handleSelectConversation = (conv) => {
     dispatch(setSelectedConversation(conv));
-
-    // Close sidebar on mobile
     setMobileOpen(false);
   };
 
-  // New chat
+  // Start a new chat
   const handleNewChat = () => {
     dispatch(setSelectedConversation(null));
     setMobileOpen(false);
   };
-
-  // Check selected conversation
-  useEffect(() => {
-    console.log(
-      "REDUX SELECTED CONVERSATION:",
-      selectedConversation
-    );
-  }, [selectedConversation]);
 
   // Logout
   const handleLogout = async () => {
@@ -132,6 +116,7 @@ function SideBar() {
       dispatch(setUserdata(null));
       dispatch(setConversations([]));
       dispatch(setSelectedConversation(null));
+
       setMobileOpen(false);
     } catch (error) {
       console.error("Logout failed:", error);
@@ -485,9 +470,7 @@ function SideBar() {
               return (
                 <button
                   key={conv._id}
-                  onClick={() =>
-                    handleSelectConversation(conv)
-                  }
+                  onClick={() => handleSelectConversation(conv)}
                   className={`
                     w-full
                     flex items-center

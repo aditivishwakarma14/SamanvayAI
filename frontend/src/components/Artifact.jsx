@@ -22,51 +22,152 @@ function Artifact() {
   const [copied, setCopied] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  if (!artifacts || artifacts.length === 0) return null;
+  if (!artifacts || artifacts.length === 0) {
+    return null;
+  }
 
-  const file = artifacts[0]?.files?.[activeFile];
+  const artifact = artifacts[0];
+  const files = artifact?.files || [];
+  const file = files[activeFile];
 
-  const htmlFile = artifacts[0]?.files?.find(
-    (f) => f.name === "index.html"
+  const htmlFile = files.find(
+    (item) => item?.name?.toLowerCase() === "index.html"
   );
 
-  const cssFile = artifacts[0]?.files?.find(
-    (f) => f.name === "style.css"
+  const cssFile = files.find(
+    (item) => item?.name?.toLowerCase() === "style.css"
   );
 
-  const jsFile = artifacts[0]?.files?.find(
-    (f) => f.name === "script.js"
+  const jsFile = files.find(
+    (item) => item?.name?.toLowerCase() === "script.js"
   );
 
   const canPreview = Boolean(htmlFile);
 
-  const previewDoc = `
+  const cleanHtml = (html = "") => {
+    let result = html;
+
+    // Remove external JavaScript references.
+    result = result.replace(
+      /<script\b[^>]*\bsrc\s*=\s*["'][^"']*["'][^>]*>\s*<\/script>/gi,
+      ""
+    );
+
+    // Remove external stylesheet references.
+    result = result.replace(
+      /<link\b[^>]*\bhref\s*=\s*["'][^"']*\.css(?:\?[^"']*)?["'][^>]*>/gi,
+      ""
+    );
+
+    return result;
+  };
+
+  const buildPreviewDocument = () => {
+    if (!htmlFile?.content) {
+      return "";
+    }
+
+    const html = cleanHtml(htmlFile.content);
+    const css = cssFile?.content || "";
+    const js = jsFile?.content || "";
+
+    // If generated HTML already contains a complete document.
+    if (/<html[\s>]/i.test(html)) {
+      let documentHtml = html;
+
+      // Inject CSS before </head>.
+      if (/<\/head>/i.test(documentHtml)) {
+        documentHtml = documentHtml.replace(
+          /<\/head>/i,
+          `
+<style>
+${css}
+</style>
+</head>`
+        );
+      } else {
+        documentHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
   <style>
-    ${cssFile?.content || ""}
+    ${css}
   </style>
 </head>
 <body>
-  ${htmlFile?.content || ""}
+  ${documentHtml}
+</body>
+</html>
+`;
+      }
+
+      // Inject JavaScript before </body>.
+      if (/<\/body>/i.test(documentHtml)) {
+        documentHtml = documentHtml.replace(
+          /<\/body>/i,
+          `
+<script>
+${js}
+</script>
+</body>`
+        );
+      } else {
+        documentHtml += `
+<script>
+${js}
+</script>
+`;
+      }
+
+      return documentHtml;
+    }
+
+    // If generated HTML only contains body content.
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <style>
+    ${css}
+  </style>
+</head>
+
+<body>
+  ${html}
+
   <script>
-    ${jsFile?.content || ""}
+    ${js}
   </script>
 </body>
 </html>
 `;
+  };
+
+  const previewDoc = buildPreviewDocument();
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(file?.content || "");
+    try {
+      await navigator.clipboard.writeText(file?.content || "");
 
-    setCopied(true);
+      setCopied(true);
 
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
   };
 
   const detectLanguage = (fileName = "") => {
@@ -92,12 +193,22 @@ function Artifact() {
       <>
         {!collapsed ? (
           <div className="flex flex-col h-full bg-[#07090C]">
-
             {/* Header */}
             <div className="h-14 px-4 border-b border-white/[0.06] flex items-center gap-3 shrink-0">
-
               <button
-                className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer shrink-0"
+                className="
+                  flex items-center justify-center
+                  w-7 h-7
+                  rounded-lg
+                  text-slate-500
+                  hover:text-slate-200
+                  hover:bg-white/[0.05]
+                  transition-colors duration-150
+                  bg-transparent
+                  border-none
+                  cursor-pointer
+                  shrink-0
+                "
                 onClick={
                   onClose
                     ? onClose
@@ -121,34 +232,51 @@ function Artifact() {
                 </div>
 
                 <div className="text-[13px] font-medium text-slate-200 truncate">
-                  {artifacts[0]?.title}
+                  {artifact?.title}
                 </div>
               </div>
 
               {/* Copy */}
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={handleCopy}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] rounded-lg transition-colors duration-150 bg-transparent border-none cursor-pointer"
-                >
-                  {copied ? (
+              <button
+                onClick={handleCopy}
+                className="
+                  flex items-center gap-1.5
+                  px-2.5 py-1.5
+                  text-[11px]
+                  font-medium
+                  text-slate-400
+                  hover:text-slate-200
+                  hover:bg-white/[0.05]
+                  rounded-lg
+                  transition-colors duration-150
+                  bg-transparent
+                  border-none
+                  cursor-pointer
+                "
+              >
+                {copied ? (
+                  <>
                     <Check size={15} />
-                  ) : (
+                    Copied
+                  </>
+                ) : (
+                  <>
                     <Copy size={15} />
-                  )}
-                </button>
-              </div>
+                    Copy
+                  </>
+                )}
+              </button>
 
               {/* Tabs */}
               {canPreview && (
                 <div className="flex items-center gap-1 bg-white/[0.04] border border-white/[0.06] p-1 rounded-lg">
-
                   <button
                     onClick={() => setTab("code")}
                     className={`
                       flex items-center gap-1.5
                       px-2.5 py-1
-                      text-[11px] font-medium
+                      text-[11px]
+                      font-medium
                       rounded-md
                       transition-colors duration-150
                       ${
@@ -167,7 +295,8 @@ function Artifact() {
                     className={`
                       flex items-center gap-1.5
                       px-2.5 py-1
-                      text-[11px] font-medium
+                      text-[11px]
+                      font-medium
                       rounded-md
                       transition-colors duration-150
                       ${
@@ -180,7 +309,6 @@ function Artifact() {
                     <Eye size={11} />
                     Preview
                   </button>
-
                 </div>
               )}
             </div>
@@ -188,9 +316,9 @@ function Artifact() {
             {/* File tabs */}
             {tab === "code" && (
               <div className="flex h-auto border-b border-white/[0.06] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden shrink-0">
-                {artifacts[0]?.files?.map((f, index) => (
+                {files.map((item, index) => (
                   <button
-                    key={f.name}
+                    key={item.name}
                     onClick={() => setActiveFile(index)}
                     className={`
                       px-4 py-2.5
@@ -209,7 +337,7 @@ function Artifact() {
                       }
                     `}
                   >
-                    {f?.name}
+                    {item.name}
 
                     {activeFile === index && (
                       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-500 rounded-t-full" />
@@ -219,7 +347,7 @@ function Artifact() {
               </div>
             )}
 
-            {/* Editor */}
+            {/* Editor / Preview */}
             <div className="flex-1 overflow-hidden">
               {tab === "preview" && canPreview ? (
                 <motion.div
@@ -268,9 +396,20 @@ function Artifact() {
           </div>
         ) : (
           <div className="hidden lg:flex h-full border-l border-white/[0.06] bg-[#07090C] flex-col items-center py-4 gap-3 shrink-0">
-
             <button
-              className="flex items-center justify-center w-7 h-7 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.05] transition-colors duration-150 bg-transparent border-none cursor-pointer shrink-0"
+              className="
+                flex items-center justify-center
+                w-7 h-7
+                rounded-lg
+                text-slate-500
+                hover:text-slate-200
+                hover:bg-white/[0.05]
+                transition-colors duration-150
+                bg-transparent
+                border-none
+                cursor-pointer
+                shrink-0
+              "
               onClick={() => setCollapsed(false)}
             >
               <PanelRightOpen size={16} />
@@ -278,13 +417,20 @@ function Artifact() {
 
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <div
-                className="text-[10px] font-medium text-slate-600 tracking-widest uppercase whitespace-nowrap"
+                className="
+                  text-[10px]
+                  font-medium
+                  text-slate-600
+                  tracking-widest
+                  uppercase
+                  whitespace-nowrap
+                "
                 style={{
                   writingMode: "vertical-lr",
                   transform: "rotate(180deg)",
                 }}
               >
-                {artifacts[0]?.title}
+                {artifact?.title}
               </div>
             </div>
           </div>

@@ -14,7 +14,19 @@ app.use("/", router);
 
 app.get("/", (req, res) => {
   res.status(200).json({
-    message: "Hello from agent"
+    message: "Hello from agent",
+  });
+});
+
+app.use((err, req, res, next) => {
+  console.error("Agent error:", err);
+
+  if (err.status) {
+    return res.status(err.status).json(err.data);
+  }
+
+  return res.status(500).json({
+    message: "Internal agent server error",
   });
 });
 

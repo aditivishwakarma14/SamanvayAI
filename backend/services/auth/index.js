@@ -10,10 +10,12 @@ const port = process.env.PORT ;
 
 const app = express()
 
-app.use(cors({
-    origin: "http://localhost:5173",
-    credentials: true
-}));
+app.use(
+  cors({
+    origin: "https://d2d9savvtvd89l.cloudfront.net",
+    credentials: true,
+  })
+);
 
 
 app.use(express.json())
